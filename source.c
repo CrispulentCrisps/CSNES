@@ -11,6 +11,7 @@ int main(int argc, char** argv)
 	else
 	{
 		printf("ERROR: No file found at %s\n", argv[1]);
+		exit(ERROR_NO_FILE_FOUND);
 	}
 	fseek(Source, 0, SEEK_END);
 	fsize = ftell(Source);
@@ -168,7 +169,7 @@ int FindIdentifier(char* input)
 
 	return 0;
 }
-
+//Checks if character is a digit
 int IsDigit(char input)
 {
 	if (input >= '0' && input <= '9') 
@@ -177,7 +178,7 @@ int IsDigit(char input)
 	}
 	return 0;
 }
-
+//Find if the current input is a decimal number
 int FindDecimal(char* input)
 {
 	int returnval = 0;
@@ -187,7 +188,7 @@ int FindDecimal(char* input)
 	}
 	return returnval;
 }
-
+//Add token to our token array
 void PushToken(int tokentype, int keyindex, int startpointer, int len)
 {
 	Token intoken = {tokentype, keyindex, startpointer, len};
@@ -198,12 +199,12 @@ void PushToken(int tokentype, int keyindex, int startpointer, int len)
 		if (TokenList == NULL)//We've fucked it, ran out of memory
 		{
 			printf("ERROR: RAN OUT OF MEMORY");
-			exit(-1);
+			exit(ERROR_OUT_OF_MEMORY);
 		}
 	}
 	TokenList[TokenListLen++] = intoken;
 }
-
+//Debug
 void PrintTokens()
 {
 	for (int x = 0; x < TokenListLen; x++)
@@ -215,7 +216,56 @@ void PrintTokens()
 
 void Parser()
 {
+	for (int x = 0; x < TokenListLen; x++)
+	{
+		if (TokenList[x].tokentype == TOKEN_KEYWORD)
+		{
+			if (TokenList[x].keyindex == 1)//Check for function
+			{
+				if (TokenList[x + 1].keyindex == 0)//Check for Main function declaration
+				{
+					TreeNode node;
+					node.Function.Name = "Main";
+					if (DetermineFunctionArgs(TokenList, x) != 0)
+					{
 
+					}
+				}
+			}
+		}
+		else if (TokenList[x].tokentype == TOKEN_IDENTIFIER)
+		{
+
+		}
+		else if (TokenList[x].tokentype == TOKEN_SYMBOL)
+		{
+
+		}
+		else if (TokenList[x].tokentype == TOKEN_DIGIT)
+		{
+
+		}
+		else
+		{
+			printf("\nERROR: UNKNOWN TOKEN PARSED");
+			exit(ERROR_UNKNOWN_TOKEN_PARSED);
+		}
+	}
+}
+
+void ParseFunction(Token token)
+{
+}
+
+int DetermineFunctionArgs(Token* token, int pos)
+{
+	int off = 0;
+	while (pos < TokenListLen && token[pos+off].keyindex != 73)//Check for OOB and for ) closing the function
+	{
+
+		off += 2;
+	}
+	return off;
 }
 
 void Generator()

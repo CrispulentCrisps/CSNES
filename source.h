@@ -9,84 +9,81 @@
 #define TOKEN_SYMBOL		2
 #define TOKEN_DIGIT			3
 
+#define ERROR_NO_FILE_FOUND				-1
+#define ERROR_OUT_OF_MEMORY				-2
+#define ERROR_UNKNOWN_TOKEN_PARSED		-3
+
 typedef enum UnionType
 {
-	NumConst,	//Constant number
-	BinaryOp,	//Binary operations and mathematical operations
-	Declaration,//Declaring variables
-	Assignment, //Assigning values
-	WhileLoop,	//While loops
-	ForLoop,	//For loops
-	Function,	//Functions such as void, int, char*
-
+	UTypeNumConst,		//Constant number
+	UTypeBinaryOp,		//Binary operations and mathematical operations
+	UTypeDeclaring,		//Declaring variables
+	UTypeAssignment,	//Assigning values
+	UTypeWhileLoop,		//While loops
+	UTypeForLoop,		//For loops
+	UTypeFunction,		//Functions such as void, int, char*
 } UnionType;
-
-typedef struct Type 
-{
-	char* Name;		//Type name
-	size_t Data;	//Data size in bytes
-} Type;
-
 
 typedef struct {
 	char* Ident;	//Keyword identifier for keyword
 } Keyword;
 
+typedef struct TreeNode TreeNode;
+
 typedef struct TreeNode {
 	UnionType NodeType;	//What type of node we're dealing with
-	union NodeData
+	union NodeData		
 	{
 		struct NumConst		{ int Data; int BitDepth;															} NumConst;
 		struct BinaryOp		{ int Data; TreeNode* Left; TreeNode* Right;										} BinaryOp;
 		struct Declaration	{ char* Name; int Type;																} Declaration;
-		struct Assignment	{ int Data; TreeNode* Destination; TreeNode* Source;								} Assignment;
+		struct Assignment	{ int Data; TreeNode* Destination; TreeNode* Origin;								} Assignment;
 		struct WhileLoop	{ TreeNode* Condition; TreeNode* Execution;											} WhileLoop;
 		struct ForLoop		{ TreeNode* Initialiser; TreeNode* Condition; TreeNode* Inc; TreeNode* Execution;	} ForLoop;
 		struct Function		{ int Type; char* Name; TreeNode* Args; TreeNode* Execution;						} Function;
 	};
 } TreeNode;
  
-const int LexSize = 0x4A;
-const int NonSymbol = 0x35;
-const Keyword KeyLex[0x4A] = {
+const int LexSize = 77;
+const int NonSymbol = 38;
+const Keyword KeyLex[] = {
 	{"main"		},
-	{"char"		},
-	{"short"	},
-	{"long"		},
-	{"unsigned"	},
-	{"signed"	},
-	{"int"		},
-	{"bool"		},
-	{"true"		},
-	{"false"	},
+	{"func"		},
+	{"ubyte"	},			//1 bytes
+	{"uword"	},			//2 bytes
+	{"ulong"	},			//3 bytes
+	{"udword"	},			//4 bytes
+	{"sbyte"	},			//1 bytes
+	{"sword"	},			//2 bytes
+	{"slong"	},			//3 bytes
+	{"sdword"	},			//4 bytes
+	{"bool"		},			//1 bit
 	{"nullptr"	},
+	{"true"		},			//1 bit
+	{"false"	},			//1 bit
 	{"if"		},
 	{"else"		},
 	{"while"	},
-	{"enum"		},
+	{"for"		},
+	{"switch"	},
+	{"case"		},
+	{"break"	},
+	{"return"	},
+	{"enum"		},			//byte per entry
 	{"void"		},
 	{"typedef"	},
 	{"struct"	},
 	{"union"	},
 	{"typeof"	},
-	{"for"		},
-	{"switch"	},
-	{"case"		},
-	{"break"	},
-	{"typeof"	},
-	{"return"	},
-	{"ifdef"	},
-	{"ifndef"	},
-	{"include"	},
-	{"define"	},
-	{"pragma"	},
+	{"#ifdef"	},
+	{"#ifndef"	},
+	{"#include"	},
+	{"#define"	},
+	{"#pragma"	},
 	{"once"		},
-	{"extern"	},
-	{"const"	},
-	{"static"	},
 	{"sizeof"	},
-	{"asm"		},
-	{"zp"		},
+	{"asm"		},			//Inline assembly
+	{"zp"		},			//Forces data to be put in zp, reserving $F0-$FF for DSP registers
 	{"++"		},
 	{"--"		},
 	{"//"		},
@@ -100,13 +97,25 @@ const Keyword KeyLex[0x4A] = {
 	{"-="		},
 	{"*="		},
 	{"/="		},
-	{"!="		},
+	{"|="		},
+	{"&="		},
+	{"^="		},
 	{"="		},
+	{"+"		},
+	{"-"		},
+	{"*"		},
+	{"/"		},
+	{"%"		},
+	{"!"		},
+	{"~"		},
 	{">"		},
 	{"<"		},
 	{"?"		},
 	{":"		},
 	{"."		},
+	{","		},
+	{";"		},
+	{"$"		},
 	{"\'"		},
 	{"\""		},
 	{"("		},
@@ -115,18 +124,9 @@ const Keyword KeyLex[0x4A] = {
 	{"]"		},
 	{"{"		},
 	{"}"		},
-	{","		},
-	{";"		},
-	{"+"		},
-	{"-"		},
-	{"*"		},
-	{"/"		},
-	{"$"		},
-	{"~"		},
 };
 
-typedef struct
-{
+typedef struct Token{
 	int tokentype;		//Type of token we're working with
 	int keyindex;		//Index within the key lexicon
 	int startpointer;	//point in the source code [measured in chars]
@@ -134,10 +134,11 @@ typedef struct
 } Token;
 
 Token* TokenList;		//List of all keywords identified within the program
-int TokenListLen = 0;
-int TokenListSize = 128;
+int TokenListLen = 0;	//How many tokens are inside the token list
+int TokenListSize = 1;	//Amount of tokens in bytes [used for resizing the token* when overflowing]
 
 FILE* Source;
+FILE* Output;
 
 char* FileBuf;
 long fsize = 0;
@@ -155,5 +156,8 @@ int IsDigit(char input);
 int FindDecimal(char* input);
 void PushToken(int tokentype, int keyindex, int startpointer, int len);
 void PrintTokens();
+
 void Parser();
+void ParseFunction(Token token);
+int DetermineFunctionArgs(Token* token, int pos);
 void Generator();

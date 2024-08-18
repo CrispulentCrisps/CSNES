@@ -1,0 +1,14 @@
+Language Specific Shit:
+	In variables:
+		u		- unsigned
+		s		- signed
+		byte	- 1byte
+		word	- 2byte
+		long	- 3byte
+		dword	- 4byte
+		|		- constant
+		so for example
+			|uword A = 24;
+			constant 16 bit value called A with a value of 24
+
+	Main is its own function that acts as an entry point
